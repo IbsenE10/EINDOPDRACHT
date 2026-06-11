@@ -1,24 +1,17 @@
 import '../css/style.css'
-import { Actor, Engine, Vector, DisplayMode } from "excalibur"
-import { Resources, ResourceLoader } from './resources.js'
 
-export class Game extends Engine {
+import * as ex from 'excalibur'
+import { ResourceLoader } from './resources.js'
+import { GameScene } from './GameScene.js'
 
-    constructor() {
-        super({ 
-            width: 1280,
-            height: 720,
-            maxFps: 60,
-            displayMode: DisplayMode.FitScreen
-         })
-        this.start(ResourceLoader).then(() => this.startGame())
-    }
+const game = new ex.Engine({
+    width: 1280,
+    height: 720,
+    displayMode: ex.DisplayMode.FitScreen,
+    backgroundColor: ex.Color.Black
+})
 
-    startGame() {
-     
-    }
-
-
-}
-
-new Game()
+game.start(ResourceLoader).then(() => {
+    game.addScene('game', new GameScene())
+    game.goToScene('game')
+})
