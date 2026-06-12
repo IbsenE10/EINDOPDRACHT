@@ -4,7 +4,7 @@ import { Bullet }    from './Bullet.js'
 
 const BULLET_CAP     = 5
 const SPAWN_X        = 1380
-const GROUND_Y       = 515    // matches Player GROUND_Y
+const GROUND_Y       = 535    // matches Player GROUND_Y
 const BULLET_HEIGHTS = [480, 380, 280]
 
 // Simple AABB overlap — works in all Excalibur versions

@@ -8,10 +8,13 @@ const game = new ex.Engine({
     width: 1280,
     height: 720,
     displayMode: ex.DisplayMode.FitScreen,
-    backgroundColor: ex.Color.Black
+    
 })
 
 game.start(ResourceLoader).then(() => {
+    console.log('✅ All assets loaded!')
     game.addScene('game', new GameScene())
     game.goToScene('game')
+}).catch((err) => {
+    console.error('❌ Asset load failed:', err)
 })

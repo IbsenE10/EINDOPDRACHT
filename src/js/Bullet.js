@@ -7,8 +7,8 @@ export class Bullet extends ex.Actor {
     constructor(x, y, speed, player) {
         super({
             pos:    ex.vec(x, y),
-            width:  60,
-            height: 40,
+            width:  10,
+            height: 10,
             collisionType: ex.CollisionType.PreventCollision,
             z: 40
         })
@@ -18,7 +18,7 @@ export class Bullet extends ex.Actor {
 
     onInitialize() {
         const sprite = Resources.Bullet.toSprite()
-        sprite.scale          = ex.vec(0.12, 0.12)
+        sprite.scale          = ex.vec(0.15, 0.15)
         sprite.flipHorizontal = true
         this.graphics.use(sprite)
     }

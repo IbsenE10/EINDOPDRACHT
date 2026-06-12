@@ -12,7 +12,7 @@ export const PlayerState = {
 }
 
 // Ground Y = the Y position the player stands on
-const GROUND_Y  = 515
+const GROUND_Y  = 535
 const GRAVITY   = 2800   // px/s² applied manually each frame
 
 export class Player extends ex.Actor {

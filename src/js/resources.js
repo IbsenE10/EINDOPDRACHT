@@ -19,7 +19,8 @@ const Resources = {
 
     CoinSound: new Sound('/sounds/Ding Sound Effect.mp3'),
     DamageSound: new Sound('/sounds/fart.ogg'),
-    Died: new Sound('/sounds/insano.ogg')
+    Died: new Sound('/sounds/insano.ogg'),
+    BGMusic: new Sound('/sounds/bgmusic.mp3'),
 }
 
 const ResourceLoader = new Loader()
