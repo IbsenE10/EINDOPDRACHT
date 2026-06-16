@@ -5,16 +5,16 @@ import { Player } from './Player.js'
 import { ObstacleManager } from './ObstacleManager.js'
 
 const SCROLL_SPEED = 300
-const GROUND_Y = 515
 
 export class GameScene extends ex.Scene {
     #player
     #obstacleManager
     #elapsed = 0
-    #active  = true
+    #active = true
 
     #healthLabel
     #coinLabel
+    #livesLabel
 
     onInitialize(engine) {
         this.#setupBackground(engine)
@@ -23,6 +23,7 @@ export class GameScene extends ex.Scene {
         this.#player = new Player((finalCoins) => {
             this.#onPlayerDie(finalCoins)
         })
+
         this.add(this.#player)
 
         this.#obstacleManager = new ObstacleManager(this, SCROLL_SPEED, this.#player)
@@ -32,20 +33,14 @@ export class GameScene extends ex.Scene {
 
     onActivate() {
         this.#elapsed = 0
-        this.#active  = true
+        this.#active = true
 
-        // Restart background music every time the scene becomes active
-        Resources.BGMusic.loop   = true
-        Resources.BGMusic.volume = 0.3
-        Resources.BGMusic.play()
+        if (this.#obstacleManager) {
+            this.#obstacleManager.clearAll()
+        }
 
         if (this.#player) {
-            this.#player.pos       = ex.vec(200, GROUND_Y)
-            this.#player.vel       = ex.vec(0, 0)
-            this.#player.isDead    = false
-            this.#player.isJumping = false
-            this.#player.isSliding = false
-            this.#player.resetStats()   // resets health, coins, animations
+            this.#player.resetStats()
         }
     }
 
@@ -61,11 +56,11 @@ export class GameScene extends ex.Scene {
         if (!this.#active || this.#player.isDead) return
 
         this.#elapsed += delta
-
         this.#obstacleManager.update(delta, this.#elapsed)
 
         this.#healthLabel.text = `Health: ${this.#player.health}/100`
-        this.#coinLabel.text   = `Coins: ${this.#player.coins}`
+        this.#coinLabel.text = `Coins: ${this.#player.coins}`
+        this.#livesLabel.text = `Lives: ${this.#player.lives}`
     }
 
     #setupUI() {
@@ -89,8 +84,19 @@ export class GameScene extends ex.Scene {
             }),
         })
 
+        this.#livesLabel = new ex.Label({
+            text: 'Lives: 3',
+            pos: ex.vec(30, 110),
+            z: 1000,
+            font: new ex.Font({
+                size: 28,
+                color: ex.Color.Green,
+            }),
+        })
+
         this.add(this.#healthLabel)
         this.add(this.#coinLabel)
+        this.add(this.#livesLabel)
     }
 
     #setupBackground(engine) {
@@ -100,8 +106,9 @@ export class GameScene extends ex.Scene {
         })
 
         const sprite = Resources.Background.toSprite()
+
         sprite.destSize = {
-            width:  engine.drawWidth,
+            width: engine.drawWidth,
             height: engine.drawHeight,
         }
 
@@ -112,8 +119,8 @@ export class GameScene extends ex.Scene {
     #setupPlatforms() {
         for (let i = 0; i < 2; i++) {
             const platform = new ex.Actor({
-                pos:    ex.vec(640 + 1280 * i, 635),
-                width:  1280,
+                pos: ex.vec(640 + 1280 * i, 635),
+                width: 1280,
                 height: 130,
                 z: 100,
                 collisionType: ex.CollisionType.PreventCollision,
@@ -124,6 +131,7 @@ export class GameScene extends ex.Scene {
 
             platform.on('preupdate', (event) => {
                 platform.pos.x -= SCROLL_SPEED * (event.delta / 1000)
+
                 if (platform.pos.x < -640) {
                     platform.pos.x += 2560
                 }
@@ -135,7 +143,15 @@ export class GameScene extends ex.Scene {
 
     #onPlayerDie(finalCoins) {
         this.#active = false
-        Resources.BGMusic.stop()            // stop music when player dies
+
+        const oldHighScore = Number(localStorage.getItem('cyberRunHighScore')) || 0
+
+        if (finalCoins > oldHighScore) {
+            localStorage.setItem('cyberRunHighScore', finalCoins)
+        }
+
+        localStorage.setItem('cyberRunLastScore', finalCoins)
+
         this.engine.goToScene('gameover')
     }
 }
