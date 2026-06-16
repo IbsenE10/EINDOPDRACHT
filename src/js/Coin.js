@@ -2,25 +2,23 @@ import * as ex from 'excalibur'
 import { Resources } from './resources.js'
 import { overlaps } from './overlaps.js'
 
-export class Bullet extends ex.Actor {
-    #hit = false
+export class Coin extends ex.Actor {
+    #collected = false
 
-    constructor(x, y, speed, player) {
+    constructor(x, y, speed) {
         super({
             pos:    ex.vec(x, y),
-            width:  10,
-            height: 10,
+            width:  50,
+            height: 50,
             collisionType: ex.CollisionType.PreventCollision,
-            z: 40
+            z: 35
         })
-        this.speed  = speed
-        this.player = player
+        this.speed = speed
     }
 
     onInitialize() {
-        const sprite = Resources.Bullet.toSprite()
-        sprite.scale          = ex.vec(0.15, 0.15)
-        sprite.flipHorizontal = true
+        const sprite = Resources.Coin.toSprite()
+        sprite.scale = ex.vec(0.15, 0.15)
         this.graphics.use(sprite)
     }
 
@@ -29,12 +27,16 @@ export class Bullet extends ex.Actor {
         if (this.pos.x < -100) this.kill()
     }
 
-    // Called by ObstacleManager each frame
     checkHit(player) {
-        if (this.#hit || this.isKilled()) return
+        if (this.#collected || this.isKilled()) return
+
         if (overlaps(this, player)) {
-            this.#hit = true
-            player.takeDamage(10)
+            this.#collected = true
+
+            Resources.CoinSound.volume = 0.4
+            Resources.CoinSound.play()
+
+            player.collectCoin()
             this.kill()
         }
     }
