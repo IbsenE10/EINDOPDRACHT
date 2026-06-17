@@ -4,7 +4,9 @@ import { Resources } from './resources.js'
 import { Player } from './Player.js'
 import { ObstacleManager } from './ObstacleManager.js'
 
-const SCROLL_SPEED = 300
+const BASE_SCROLL_SPEED = 300
+const MAX_SCROLL_SPEED  = 650
+const SPEED_RAMP_RATE   = 0.012   // px/s gained per ms elapsed
 
 export class GameScene extends ex.Scene {
     #player
@@ -15,6 +17,9 @@ export class GameScene extends ex.Scene {
     #healthLabel
     #coinLabel
     #livesLabel
+    #speedLabel
+
+    #platforms = []
 
     onInitialize(engine) {
         this.#setupBackground(engine)
@@ -26,7 +31,13 @@ export class GameScene extends ex.Scene {
 
         this.add(this.#player)
 
-        this.#obstacleManager = new ObstacleManager(this, SCROLL_SPEED, this.#player)
+        // Pass a live-speed getter so ObstacleManager always reads
+        // the current (increasing) scroll speed, not a fixed number
+        this.#obstacleManager = new ObstacleManager(
+            this,
+            () => this.#currentScrollSpeed(),
+            this.#player
+        )
 
         this.#setupUI()
     }
@@ -58,9 +69,29 @@ export class GameScene extends ex.Scene {
         this.#elapsed += delta
         this.#obstacleManager.update(delta, this.#elapsed)
 
+        const speed = this.#currentScrollSpeed()
+
+        // Scroll the platforms at the current (increasing) speed
+        this.#platforms.forEach(platform => {
+            platform.pos.x -= speed * (delta / 1000)
+            if (platform.pos.x < -640) {
+                platform.pos.x += 2560
+            }
+        })
+
         this.#healthLabel.text = `Health: ${this.#player.health}/100`
         this.#coinLabel.text = `Coins: ${this.#player.coins}`
         this.#livesLabel.text = `Lives: ${this.#player.lives}`
+        this.#speedLabel.text = `Speed: ${Math.round(speed)}`
+    }
+
+    // Speed increases gradually with elapsed time, capped at MAX_SCROLL_SPEED.
+    // "Hoe langer je in leven blijft, hoe sneller de speler rent."
+    #currentScrollSpeed() {
+        return Math.min(
+            MAX_SCROLL_SPEED,
+            BASE_SCROLL_SPEED + this.#elapsed * SPEED_RAMP_RATE
+        )
     }
 
     #setupUI() {
@@ -94,52 +125,54 @@ export class GameScene extends ex.Scene {
             }),
         })
 
+        this.#speedLabel = new ex.Label({
+            text: 'Speed: 300',
+            pos: ex.vec(30, 145),
+            z: 1000,
+            font: new ex.Font({
+                size: 24,
+                color: ex.Color.LightGray,
+            }),
+        })
+
         this.add(this.#healthLabel)
         this.add(this.#coinLabel)
         this.add(this.#livesLabel)
+        this.add(this.#speedLabel)
     }
 
-    #setupBackground(engine) {
-        const background = new ex.Actor({
-            pos: ex.vec(engine.drawWidth / 2, engine.drawHeight / 2),
-            z: -1000,
+#setupBackground(engine) {
+    const background = new ex.Actor({
+        pos: ex.vec(640, 360),
+        z: -1000,
+    })
+
+    const sprite = Resources.Background.toSprite()
+    // Image is now exactly 1280x720 — no scaling needed
+    background.graphics.use(sprite)
+    this.add(background)
+}
+
+   #setupPlatforms() {
+    this.#platforms = []
+
+    for (let i = 0; i < 2; i++) {
+        const platform = new ex.Actor({
+            pos: ex.vec(640 + 1280 * i, 635),
+            width: 1280,
+            height: 130,
+            z: 100,
+            collisionType: ex.CollisionType.PreventCollision,
         })
 
-        const sprite = Resources.Background.toSprite()
+        const sprite = Resources.Platform.toSprite()
+        sprite.scale = ex.vec(1280 / 1774, 130 / 204)   // ← updated to match cropped image
+        platform.graphics.use(sprite)
 
-        sprite.destSize = {
-            width: engine.drawWidth,
-            height: engine.drawHeight,
-        }
-
-        background.graphics.use(sprite)
-        this.add(background)
+        this.add(platform)
+        this.#platforms.push(platform)
     }
-
-    #setupPlatforms() {
-        for (let i = 0; i < 2; i++) {
-            const platform = new ex.Actor({
-                pos: ex.vec(640 + 1280 * i, 635),
-                width: 1280,
-                height: 130,
-                z: 100,
-                collisionType: ex.CollisionType.PreventCollision,
-            })
-
-            const sprite = Resources.Platform.toSprite()
-            platform.graphics.use(sprite)
-
-            platform.on('preupdate', (event) => {
-                platform.pos.x -= SCROLL_SPEED * (event.delta / 1000)
-
-                if (platform.pos.x < -640) {
-                    platform.pos.x += 2560
-                }
-            })
-
-            this.add(platform)
-        }
-    }
+}
 
     #onPlayerDie(finalCoins) {
         this.#active = false
@@ -152,6 +185,7 @@ export class GameScene extends ex.Scene {
 
         localStorage.setItem('cyberRunLastScore', finalCoins)
 
+        Resources.BGMusic.stop()
         this.engine.goToScene('gameover')
     }
 }

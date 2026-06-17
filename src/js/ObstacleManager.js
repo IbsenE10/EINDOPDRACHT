@@ -27,11 +27,13 @@ export class ObstacleManager {
     #coinInterval = 1800
     #lifeUpInterval = 12000
 
-    #scrollSpeed = 300
+    // Base scroll speed — actual speed is read live from #getSpeed callback
+    #getSpeed
 
-    constructor(scene, scrollSpeed = 300, player) {
+    constructor(scene, getSpeed, player) {
         this.#scene = scene
-        this.#scrollSpeed = scrollSpeed
+        // Support both: a number (legacy) or a function that returns the live speed
+        this.#getSpeed = typeof getSpeed === 'function' ? getSpeed : () => getSpeed
         this.#player = player
     }
 
@@ -103,19 +105,26 @@ export class ObstacleManager {
         }
     }
 
+    // Random size factor between 0.7x and 1.5x — gives obstacles varying afmetingen
+    #randomSizeScale() {
+        return 0.7 + Math.random() * 0.8
+    }
+
     #spawnBullet() {
         if (this.#bullets.length >= BULLET_CAP) return
 
         const y = BULLET_HEIGHTS[Math.floor(Math.random() * BULLET_HEIGHTS.length)]
-        const speed = 400 + Math.random() * 200
-        const bullet = new Bullet(SPAWN_X, y, speed, this.#player)
+        const speed = this.#getSpeed() + 100 + Math.random() * 200
+        const sizeScale = this.#randomSizeScale()
+        const bullet = new Bullet(SPAWN_X, y, speed, this.#player, sizeScale)
 
         this.#bullets.push(bullet)
         this.#scene.add(bullet)
     }
 
     #spawnBarrier() {
-        const barrier = new Barrier(SPAWN_X, GROUND_Y, this.#scrollSpeed)
+        const sizeScale = this.#randomSizeScale()
+        const barrier = new Barrier(SPAWN_X, GROUND_Y, this.#getSpeed(), sizeScale)
 
         this.#barriers.push(barrier)
         this.#scene.add(barrier)
@@ -124,14 +133,14 @@ export class ObstacleManager {
     #spawnCoin() {
         const heights = [470, 370, 290]
         const y = heights[Math.floor(Math.random() * heights.length)]
-        const coin = new Coin(SPAWN_X, y, this.#scrollSpeed)
+        const coin = new Coin(SPAWN_X, y, this.#getSpeed())
 
         this.#coins.push(coin)
         this.#scene.add(coin)
     }
 
     #spawnLifeUp() {
-        const lifeUp = new LifeUp(SPAWN_X, 360, this.#scrollSpeed)
+        const lifeUp = new LifeUp(SPAWN_X, 360, this.#getSpeed())
 
         this.#lifeUps.push(lifeUp)
         this.#scene.add(lifeUp)

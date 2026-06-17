@@ -4,22 +4,27 @@ import { overlaps } from './overlaps.js'
 
 export class Bullet extends ex.Actor {
     #hit = false
+    #scaleFactor = 1
 
-    constructor(x, y, speed, player) {
+    constructor(x, y, speed, player, sizeScale = 1) {
+        const width  = 10 * sizeScale
+        const height = 10 * sizeScale
+
         super({
             pos:    ex.vec(x, y),
-            width:  10,
-            height: 10,
+            width,
+            height,
             collisionType: ex.CollisionType.PreventCollision,
             z: 40
         })
         this.speed  = speed
         this.player = player
+        this.#scaleFactor = sizeScale
     }
 
     onInitialize() {
         const sprite = Resources.Bullet.toSprite()
-        sprite.scale          = ex.vec(0.15, 0.15)
+        sprite.scale          = ex.vec(0.15 * this.#scaleFactor, 0.15 * this.#scaleFactor)
         sprite.flipHorizontal = true
         this.graphics.use(sprite)
     }
