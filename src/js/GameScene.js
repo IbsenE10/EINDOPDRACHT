@@ -8,6 +8,9 @@ const BASE_SCROLL_SPEED = 300
 const MAX_SCROLL_SPEED  = 650
 const SPEED_RAMP_RATE   = 0.012   // px/s gained per ms elapsed
 
+const PLATFORM_WIDTH = 1280
+const PLATFORM_OVERLAP = 100
+
 export class GameScene extends ex.Scene {
     #player
     #obstacleManager
@@ -45,11 +48,17 @@ export class GameScene extends ex.Scene {
     onActivate() {
         this.#elapsed = 0
         this.#active = true
-
+    
+        if (Resources.BGMusic) {
+            Resources.BGMusic.loop = true
+            Resources.BGMusic.volume = 0.06
+            Resources.BGMusic.play()
+        }
+    
         if (this.#obstacleManager) {
             this.#obstacleManager.clearAll()
         }
-
+    
         if (this.#player) {
             this.#player.resetStats()
         }
@@ -70,12 +79,13 @@ export class GameScene extends ex.Scene {
         this.#obstacleManager.update(delta, this.#elapsed)
 
         const speed = this.#currentScrollSpeed()
+        const segmentSpacing = PLATFORM_WIDTH - PLATFORM_OVERLAP
+        const wrapDistance = segmentSpacing * this.#platforms.length
 
-        // Scroll the platforms at the current (increasing) speed
         this.#platforms.forEach(platform => {
             platform.pos.x -= speed * (delta / 1000)
-            if (platform.pos.x < -640) {
-                platform.pos.x += 2560
+            if (platform.pos.x < -(segmentSpacing / 2)) {
+                platform.pos.x += wrapDistance
             }
         })
 
@@ -141,38 +151,40 @@ export class GameScene extends ex.Scene {
         this.add(this.#speedLabel)
     }
 
-#setupBackground(engine) {
-    const background = new ex.Actor({
-        pos: ex.vec(640, 360),
-        z: -1000,
-    })
-
-    const sprite = Resources.Background.toSprite()
-    // Image is now exactly 1280x720 — no scaling needed
-    background.graphics.use(sprite)
-    this.add(background)
-}
-
-   #setupPlatforms() {
-    this.#platforms = []
-
-    for (let i = 0; i < 2; i++) {
-        const platform = new ex.Actor({
-            pos: ex.vec(640 + 1280 * i, 635),
-            width: 1280,
-            height: 130,
-            z: 100,
-            collisionType: ex.CollisionType.PreventCollision,
+    #setupBackground(engine) {
+        const background = new ex.Actor({
+            pos: ex.vec(640, 360),
+            z: -1000,
         })
 
-        const sprite = Resources.Platform.toSprite()
-        sprite.scale = ex.vec(1280 / 1774, 130 / 204)   // ← updated to match cropped image
-        platform.graphics.use(sprite)
-
-        this.add(platform)
-        this.#platforms.push(platform)
+        const sprite = Resources.Background.toSprite()
+        // Image is now exactly 1280x720 — no scaling needed
+        background.graphics.use(sprite)
+        this.add(background)
     }
-}
+
+    #setupPlatforms() {
+        this.#platforms = []
+
+        const segmentSpacing = PLATFORM_WIDTH - PLATFORM_OVERLAP
+
+        for (let i = 0; i < 2; i++) {
+            const platform = new ex.Actor({
+                pos: ex.vec(segmentSpacing * i + PLATFORM_WIDTH / 2, 635),
+                width: PLATFORM_WIDTH,
+                height: 130,
+                z: 100,
+                collisionType: ex.CollisionType.PreventCollision,
+            })
+
+            const sprite = Resources.Platform.toSprite()
+            sprite.scale = ex.vec(1.0, 130 / 204)
+            platform.graphics.use(sprite)
+
+            this.add(platform)
+            this.#platforms.push(platform)
+        }
+    }
 
     #onPlayerDie(finalCoins) {
         this.#active = false

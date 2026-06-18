@@ -7,8 +7,8 @@ export class Bullet extends ex.Actor {
     #scaleFactor = 1
 
     constructor(x, y, speed, player, sizeScale = 1) {
-        const width  = 10 * sizeScale
-        const height = 10 * sizeScale
+        const width  = 5 * sizeScale
+        const height = 5 * sizeScale
 
         super({
             pos:    ex.vec(x, y),
